@@ -2,7 +2,7 @@
 
 from .config import Config
 from .modules import Module
-from .parser import FileStructure
+from .parser import FileStructure, FunctionInfo, Visibility
 
 
 # LLM prompt template for module summarization
@@ -19,19 +19,25 @@ You are generating documentation for a code module to help other LLMs understand
 
 Generate a markdown document following this template:
 
-```markdown
+````markdown
 # Module: {module_name}
 
 **Purpose**: [One sentence describing what this module does]
 
 **Location**: `{module_path}`
 
+**Consumes**: [What data/artifacts this module takes as input, e.g., "Source files", "Token stream", "AST"]
+
+**Produces**: [What data/artifacts this module outputs, e.g., "Token stream", "AST", "Bytecode"]
+
 ## Dependencies
 
 **Depends on**:
-- [List modules/libraries this depends on, with brief explanation]
+- `module_name` – [Brief explanation of what is used from this module]
+
 
 **Depended by**:
+- `module_name` – [Brief explanation of how this module is used]
 - [List modules that depend on this, or "Unknown" if cannot determine]
 
 ## Key Components
@@ -43,6 +49,20 @@ Generate a markdown document following this template:
 
 - `function_signature` – What it does
 - [List main public APIs]
+
+## Common Usage Patterns
+
+Provide 1-2 practical code examples showing how to use this module:
+
+### [Pattern Name, e.g., "Basic Usage" or "Initialization"]
+```[language]
+// Example code showing typical usage
+```
+
+### [Pattern Name, e.g., "Error Handling" or "Advanced Usage"]
+```[language]
+// Example code showing error handling or advanced patterns
+```
 
 ## Critical Patterns
 
@@ -68,7 +88,9 @@ Only include patterns that would prevent bugs or misuse. Skip if no critical pat
 Focus on:
 - The module's PURPOSE (what problem it solves)
 - Its DEPENDENCIES (what it needs, what needs it)
+- What it CONSUMES and PRODUCES (data flow)
 - KEY COMPONENTS (most important functions/classes)
+- USAGE PATTERNS (practical examples for integration)
 - CRITICAL PATTERNS (code snippets showing usage gotchas)
 - INVARIANTS (important rules/assumptions)
 
@@ -76,36 +98,111 @@ Be concise. Avoid restating obvious code. Focus on architectural understanding.
 """
 
 
+def _partition_by_visibility(
+    items: list[FunctionInfo],
+) -> tuple[list[FunctionInfo], list[FunctionInfo], list[FunctionInfo]]:
+    """Partition functions/methods by visibility: public, protected, private."""
+    public = []
+    protected = []
+    private = []
+    
+    for item in items:
+        if item.visibility == Visibility.PUBLIC:
+            public.append(item)
+        elif item.visibility == Visibility.PROTECTED:
+            protected.append(item)
+        else:  # PRIVATE or UNKNOWN treated as internal
+            private.append(item)
+    
+    return public, protected, private
+
+
+def _format_internal_summary(
+    protected: list[FunctionInfo], 
+    private: list[FunctionInfo],
+) -> list[str]:
+    """Format a compact summary of internal (non-public) items."""
+    lines = []
+    
+    total_internal = len(protected) + len(private)
+    if total_internal == 0:
+        return lines
+    
+    # Collect all internal names
+    internal_names = [f.name for f in protected] + [f.name for f in private]
+    
+    # Show first few names, then "..." 
+    max_preview = 6
+    if len(internal_names) <= max_preview:
+        names_str = ", ".join(internal_names)
+    else:
+        names_str = ", ".join(internal_names[:max_preview]) + ", ..."
+    
+    lines.append(f"    Internal ({total_internal} total): {names_str}")
+    
+    return lines
+
+
 def _format_structure(structures: list[FileStructure]) -> str:
-    """Format extracted structures for the LLM prompt."""
+    """Format extracted structures for the LLM prompt.
+    
+    Uses a tiered approach to balance completeness with token limits:
+    - Public API: Full signatures always included
+    - Internal symbols: Summarized with counts and names
+    """
     lines = []
     
     for struct in structures:
         lines.append(f"\n### {struct.path.name}")
         
+        # Format imports - group by system vs local
         if struct.imports:
-            lines.append("\nIncludes:")
-            for imp in struct.imports[:10]:  # Limit to 10
-                prefix = "<system>" if imp.is_system else "<local>"
-                lines.append(f"  - {prefix} {imp.name}")
-            if len(struct.imports) > 10:
-                lines.append(f"  ... and {len(struct.imports) - 10} more")
+            system_imports = [i for i in struct.imports if i.is_system]
+            local_imports = [i for i in struct.imports if not i.is_system]
+            
+            lines.append("\nDependencies:")
+            if system_imports:
+                lines.append(f"  System ({len(system_imports)}): " + 
+                           ", ".join(i.name for i in system_imports[:8]) +
+                           ("..." if len(system_imports) > 8 else ""))
+            if local_imports:
+                lines.append(f"  Local ({len(local_imports)}): " + 
+                           ", ".join(i.name for i in local_imports[:10]) +
+                           ("..." if len(local_imports) > 10 else ""))
         
+        # Format classes with tiered method display
         if struct.classes:
             lines.append("\nClasses/Structs:")
             for cls in struct.classes:
-                lines.append(f"  - {cls.name} (lines {cls.line_start}-{cls.line_end})")
-                for method in cls.methods[:5]:  # Limit methods
-                    lines.append(f"    - {method.name}()")
-                if len(cls.methods) > 5:
-                    lines.append(f"    ... and {len(cls.methods) - 5} more methods")
+                lines.append(f"  **{cls.name}** (lines {cls.line_start}-{cls.line_end})")
+                
+                if cls.methods:
+                    public, protected, private = _partition_by_visibility(cls.methods)
+                    
+                    # Public methods: full signatures
+                    if public:
+                        lines.append("    Public API:")
+                        for method in public:
+                            lines.append(f"      - {method.signature}")
+                    
+                    # Internal methods: summarized
+                    lines.extend(_format_internal_summary(protected, private))
         
+        # Format top-level functions with tiered display
         if struct.functions:
-            lines.append("\nFunctions:")
-            for func in struct.functions[:15]:  # Limit to 15
-                lines.append(f"  - {func.signature}")
-            if len(struct.functions) > 15:
-                lines.append(f"  ... and {len(struct.functions) - 15} more")
+            public, protected, private = _partition_by_visibility(struct.functions)
+            
+            if public:
+                lines.append("\nPublic Functions:")
+                for func in public:
+                    lines.append(f"  - {func.signature}")
+            
+            # Internal functions summary
+            if protected or private:
+                internal_lines = _format_internal_summary(protected, private)
+                if internal_lines:
+                    lines.append("\nInternal Functions:")
+                    lines.extend(internal_lines)
     
     return "\n".join(lines)
 

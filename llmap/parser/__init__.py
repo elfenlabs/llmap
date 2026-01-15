@@ -1,15 +1,17 @@
-"""Parser package."""
+"""Parser package for code structure extraction."""
 
-from .base import BaseParser, FileStructure, FunctionInfo, ClassInfo, ImportInfo
+from .base import BaseParser, FileStructure, FunctionInfo, ClassInfo, ImportInfo, Visibility
 from .cpp import CppParser
 
 __all__ = [
     "BaseParser",
-    "FileStructure", 
+    "FileStructure",
     "FunctionInfo",
     "ClassInfo",
     "ImportInfo",
+    "Visibility",
     "CppParser",
+    "get_parser_for_file",
 ]
 
 
