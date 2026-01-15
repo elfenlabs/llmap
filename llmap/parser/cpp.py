@@ -112,17 +112,40 @@ class CppParser(BaseParser):
         for node in self._find_nodes(root, "function_definition"):
             # Skip if inside a class
             parent = node.parent
+            in_class = False
+            in_anonymous_namespace = False
+            
             while parent:
                 if parent.type in ["class_specifier", "struct_specifier"]:
+                    in_class = True
                     break
+                # Check for anonymous namespace (namespace_definition without name)
+                if parent.type == "namespace_definition":
+                    if parent.child_by_field_name("name") is None:
+                        in_anonymous_namespace = True
                 parent = parent.parent
+            
+            if in_class:
+                continue
+                
+            # Determine visibility for file-scope functions
+            # Check for static storage class (internal linkage)
+            is_static = any(
+                child.type == "storage_class_specifier" and 
+                self._get_text(child, content).strip() == "static"
+                for child in node.children
+            )
+            
+            if is_static or in_anonymous_namespace:
+                visibility = Visibility.PRIVATE
             else:
-                # Top-level functions are public by default
-                func_info = self._extract_function_info(
-                    node, content, visibility=Visibility.PUBLIC
-                )
-                if func_info:
-                    structure.functions.append(func_info)
+                visibility = Visibility.PUBLIC
+            
+            func_info = self._extract_function_info(
+                node, content, visibility=visibility
+            )
+            if func_info:
+                structure.functions.append(func_info)
     
     def _extract_function_info(
         self, 
