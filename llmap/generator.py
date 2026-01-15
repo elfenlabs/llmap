@@ -59,32 +59,102 @@ class MapGenerator:
         # Collect all module files
         module_files = sorted(self.modules_path.glob("*.md"))
         
+        # Extract module info (name, purpose, consumes, produces, depends_on)
+        modules_info = []
+        for module_file in module_files:
+            content = module_file.read_text()
+            name = module_file.stem.replace("_", "/")
+            
+            # Extract purpose
+            purpose = ""
+            for line in content.split("\n"):
+                if line.startswith("**Purpose**:"):
+                    purpose = line.replace("**Purpose**:", "").strip()
+                    break
+            
+            # Extract consumes
+            consumes = ""
+            for line in content.split("\n"):
+                if line.startswith("**Consumes**:"):
+                    consumes = line.replace("**Consumes**:", "").strip()
+                    break
+            
+            # Extract produces
+            produces = ""
+            for line in content.split("\n"):
+                if line.startswith("**Produces**:"):
+                    produces = line.replace("**Produces**:", "").strip()
+                    break
+            
+            # Extract depends_on list
+            depends_on = []
+            in_depends_section = False
+            for line in content.split("\n"):
+                if line.startswith("**Depends on**:"):
+                    in_depends_section = True
+                    continue
+                if in_depends_section:
+                    if line.startswith("**") or (line.strip() and not line.startswith("-")):
+                        break
+                    if line.strip().startswith("- `"):
+                        # Extract module name from "- `module_name` – description"
+                        dep = line.strip()[3:]  # Remove "- `"
+                        if "`" in dep:
+                            dep = dep.split("`")[0]
+                            depends_on.append(dep)
+            
+            modules_info.append({
+                "name": name,
+                "file": module_file.name,
+                "purpose": purpose,
+                "consumes": consumes,
+                "produces": produces,
+                "depends_on": depends_on,
+            })
+        
+        # Group modules by category (first path component)
+        categories: dict[str, list[dict]] = {}
+        for info in modules_info:
+            parts = info["name"].split("/")
+            category = parts[0].title() if len(parts) > 1 else "Core"
+            if category not in categories:
+                categories[category] = []
+            categories[category].append(info)
+        
+        # Build output
         lines = [
             "# Code Map Overview",
             "",
             "This document provides a high-level overview of the codebase architecture.",
             "",
-            "## Modules",
+            "## Module Dependency Graph",
             "",
         ]
         
-        for module_file in module_files:
-            # Extract first line (title) and purpose from module file
-            content = module_file.read_text()
-            module_lines = content.split("\n")
-            
-            # Get module name from first heading
-            name = module_file.stem.replace("_", "/")
-            
-            # Find purpose line
-            purpose = ""
-            for line in module_lines:
-                if line.startswith("**Purpose**:"):
-                    purpose = line.replace("**Purpose**:", "").strip()
-                    break
-            
-            rel_path = f"modules/{module_file.name}"
-            lines.append(f"- [{name}]({rel_path}) – {purpose}")
+        # Generate dependency graph grouped by category
+        for category, mods in sorted(categories.items()):
+            lines.append(f"### {category}")
+            lines.append("")
+            for mod in mods:
+                parts = []
+                if mod["consumes"]:
+                    parts.append(f"consumes: {mod['consumes']}")
+                if mod["produces"]:
+                    parts.append(f"produces: {mod['produces']}")
+                
+                if parts:
+                    lines.append(f"- `{mod['name']}` → {' | '.join(parts)}")
+                else:
+                    lines.append(f"- `{mod['name']}`")
+            lines.append("")
+        
+        # Module list section
+        lines.append("## Modules")
+        lines.append("")
+        
+        for info in modules_info:
+            rel_path = f"modules/{info['file']}"
+            lines.append(f"- [{info['name']}]({rel_path}) – {info['purpose']}")
         
         lines.append("")
         lines.append("---")

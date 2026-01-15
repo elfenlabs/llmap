@@ -26,12 +26,18 @@ Generate a markdown document following this template:
 
 **Location**: `{module_path}`
 
+**Consumes**: [What data/artifacts this module takes as input, e.g., "Source files", "Token stream", "AST"]
+
+**Produces**: [What data/artifacts this module outputs, e.g., "Token stream", "AST", "Bytecode"]
+
 ## Dependencies
 
 **Depends on**:
-- [List modules/libraries this depends on, with brief explanation]
+- `module_name` – [Brief explanation of what is used from this module]
+- [List modules/libraries this depends on]
 
 **Depended by**:
+- `module_name` – [Brief explanation of how this module is used]
 - [List modules that depend on this, or "Unknown" if cannot determine]
 
 ## Key Components
@@ -57,6 +63,7 @@ Generate a markdown document following this template:
 Focus on:
 - The module's PURPOSE (what problem it solves)
 - Its DEPENDENCIES (what it needs, what needs it)
+- What it CONSUMES and PRODUCES (data flow)
 - KEY COMPONENTS (most important functions/classes)
 - INVARIANTS (important rules/assumptions)
 
