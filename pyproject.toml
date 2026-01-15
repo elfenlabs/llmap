@@ -10,7 +10,7 @@ readme = "README.md"
 requires-python = ">=3.10"
 license = "MIT"
 authors = [
-    { name = "Yonder" }
+    { name = "yonder" }
 ]
 keywords = ["llm", "code-analysis", "documentation", "architecture"]
 classifiers = [
