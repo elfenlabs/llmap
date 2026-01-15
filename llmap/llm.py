@@ -19,7 +19,7 @@ You are generating documentation for a code module to help other LLMs understand
 
 Generate a markdown document following this template:
 
-```markdown
+````markdown
 # Module: {module_name}
 
 **Purpose**: [One sentence describing what this module does]
@@ -69,7 +69,7 @@ Extract examples from test files or examples in the codebase when available.
 
 - `filename.cpp` – Brief purpose
 - [List all files with one-line descriptions]
-```
+````
 
 Focus on:
 - The module's PURPOSE (what problem it solves)
