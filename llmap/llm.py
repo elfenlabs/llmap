@@ -19,7 +19,7 @@ You are generating documentation for a code module to help other LLMs understand
 
 Generate a markdown document following this template:
 
-```markdown
+````markdown
 # Module: {module_name}
 
 **Purpose**: [One sentence describing what this module does]
@@ -44,6 +44,23 @@ Generate a markdown document following this template:
 - `function_signature` – What it does
 - [List main public APIs]
 
+## Common Usage Patterns
+
+Provide 1-2 practical code examples showing how to use this module:
+
+### [Pattern Name, e.g., "Basic Usage" or "Initialization"]
+```[language]
+// Example code showing typical usage
+```
+
+### [Pattern Name, e.g., "Error Handling" or "Advanced Usage"]
+```[language]
+// Example code showing error handling or advanced patterns
+```
+
+Focus on: initialization, main workflow, and error handling patterns.
+Extract examples from test files or examples in the codebase when available.
+
 ## Invariants & Design Notes
 
 - [Important rules, assumptions, or design decisions]
@@ -52,12 +69,13 @@ Generate a markdown document following this template:
 
 - `filename.cpp` – Brief purpose
 - [List all files with one-line descriptions]
-```
+````
 
 Focus on:
 - The module's PURPOSE (what problem it solves)
 - Its DEPENDENCIES (what it needs, what needs it)
 - KEY COMPONENTS (most important functions/classes)
+- USAGE PATTERNS (practical examples for integration)
 - INVARIANTS (important rules/assumptions)
 
 Be concise. Avoid restating obvious code. Focus on architectural understanding.
