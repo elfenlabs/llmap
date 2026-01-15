@@ -2,7 +2,16 @@
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
+from enum import Enum
 from pathlib import Path
+
+
+class Visibility(Enum):
+    """Visibility level for functions and classes."""
+    PUBLIC = "public"
+    PROTECTED = "protected"
+    PRIVATE = "private"
+    UNKNOWN = "unknown"  # For languages without explicit visibility
 
 
 @dataclass
@@ -13,6 +22,7 @@ class FunctionInfo:
     line_start: int
     line_end: int
     docstring: str | None = None
+    visibility: Visibility = Visibility.UNKNOWN
 
 
 @dataclass 
@@ -23,6 +33,7 @@ class ClassInfo:
     line_end: int
     methods: list[FunctionInfo] = field(default_factory=list)
     docstring: str | None = None
+    visibility: Visibility = Visibility.UNKNOWN
 
 
 @dataclass

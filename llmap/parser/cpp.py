@@ -11,6 +11,7 @@ from .base import (
     FileStructure,
     FunctionInfo,
     ImportInfo,
+    Visibility,
 )
 
 
@@ -70,13 +71,39 @@ class CppParser(BaseParser):
                         line_end=node.end_point[0] + 1,
                     )
                     
-                    # Extract methods
+                    # Extract methods with visibility tracking
                     body_node = node.child_by_field_name("body")
                     if body_node:
-                        for method in self._find_nodes(body_node, "function_definition"):
-                            method_info = self._extract_function_info(method, content)
-                            if method_info:
-                                class_info.methods.append(method_info)
+                        # Default: private for class, public for struct
+                        current_visibility = (
+                            Visibility.PRIVATE if node_type == "class_specifier" 
+                            else Visibility.PUBLIC
+                        )
+                        
+                        for child in body_node.children:
+                            # Track visibility changes
+                            if child.type == "access_specifier":
+                                spec_text = self._get_text(child, content).rstrip(":")
+                                if "public" in spec_text:
+                                    current_visibility = Visibility.PUBLIC
+                                elif "protected" in spec_text:
+                                    current_visibility = Visibility.PROTECTED
+                                elif "private" in spec_text:
+                                    current_visibility = Visibility.PRIVATE
+                            elif child.type == "function_definition":
+                                method_info = self._extract_function_info(
+                                    child, content, visibility=current_visibility
+                                )
+                                if method_info:
+                                    class_info.methods.append(method_info)
+                            # Also check for nested function definitions
+                            else:
+                                for method in self._find_nodes(child, "function_definition"):
+                                    method_info = self._extract_function_info(
+                                        method, content, visibility=current_visibility
+                                    )
+                                    if method_info:
+                                        class_info.methods.append(method_info)
                     
                     structure.classes.append(class_info)
     
@@ -90,11 +117,19 @@ class CppParser(BaseParser):
                     break
                 parent = parent.parent
             else:
-                func_info = self._extract_function_info(node, content)
+                # Top-level functions are public by default
+                func_info = self._extract_function_info(
+                    node, content, visibility=Visibility.PUBLIC
+                )
                 if func_info:
                     structure.functions.append(func_info)
     
-    def _extract_function_info(self, node, content: bytes) -> FunctionInfo | None:
+    def _extract_function_info(
+        self, 
+        node, 
+        content: bytes,
+        visibility: Visibility = Visibility.UNKNOWN,
+    ) -> FunctionInfo | None:
         """Extract function information from a function_definition node."""
         declarator = node.child_by_field_name("declarator")
         if not declarator:
@@ -117,11 +152,13 @@ class CppParser(BaseParser):
             signature=signature.strip(),
             line_start=node.start_point[0] + 1,
             line_end=node.end_point[0] + 1,
+            visibility=visibility,
         )
     
     def _find_function_name(self, declarator, content: bytes) -> str | None:
         """Recursively find function name in declarator."""
-        if declarator.type == "identifier":
+        # Handle both identifier (top-level) and field_identifier (methods)
+        if declarator.type in ["identifier", "field_identifier"]:
             return self._get_text(declarator, content)
         
         if declarator.type == "qualified_identifier":
