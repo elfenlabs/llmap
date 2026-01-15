@@ -95,7 +95,7 @@ def load_config(path: Path) -> Config:
 def create_default_config(path: Path):
     """Create a default configuration file."""
     default_yaml = """\
-# Cartographer configuration
+# llmap configuration
 
 # LLM provider configuration
 llm:

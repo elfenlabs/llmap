@@ -1,4 +1,4 @@
-"""Click-based CLI for Cartographer."""
+"""Click-based CLI for llmap."""
 
 import click
 from pathlib import Path

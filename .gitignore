@@ -39,7 +39,7 @@ htmlcov/
 *.swo
 *~
 
-# Cartographer output
+# LLMap output
 .codemap/
 
 # OS

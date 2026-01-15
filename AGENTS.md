@@ -1,4 +1,4 @@
-# Cartographer
+# llmap
 
 **A CLI tool that generates navigable "code maps" to help LLMs understand project architecture.**
 
@@ -10,7 +10,7 @@ LLM-based coding agents struggle with large codebases because they lack "the big
 - Design rationale and invariants
 - Dependency relationships
 
-Cartographer solves this by generating a structured, markdown-based "map" of the codebase that LLMs can easily ingest and reason about.
+llmap solves this by generating a structured, markdown-based "map" of the codebase that LLMs can easily ingest and reason about.
 
 ---
 
@@ -32,19 +32,19 @@ The output is:
 
 ```bash
 # Initialize a new codemap in the current project
-cartographer init
+llmap init
 
 # Incrementally update (only changed files since last run)
-cartographer update
+llmap update
 
 # Force full rebuild
-cartographer update --full
+llmap update --full
 
 # Check if map is up-to-date (useful for CI)
-cartographer status
+llmap status
 
 # Show what would be updated without doing it
-cartographer update --dry-run
+llmap update --dry-run
 ```
 
 ---
@@ -283,7 +283,7 @@ Be concise. Avoid restating obvious code. Focus on architectural understanding.
 ### Python-Specific
 
 ```
-cartographer/
+llmap/
 ├── __init__.py
 ├── cli.py              # Click-based CLI
 ├── config.py           # Config loading/validation
@@ -305,7 +305,7 @@ cartographer/
 ## Future Enhancements
 
 ### Phase 2
-- **Watch mode**: `cartographer watch` – auto-update on file save
+- **Watch mode**: `llmap watch` – auto-update on file save
 - **Git hooks**: Pre-commit hook to warn if map is stale
 - **CI integration**: GitHub Action to validate map freshness
 
@@ -325,7 +325,7 @@ cartographer/
 1. **Correctness**: Generated maps accurately reflect code structure
 2. **Usefulness**: An LLM reading the map can answer "where is X?" and "how does Y work?"
 3. **Performance**: Incremental updates complete in seconds, not minutes
-4. **Simplicity**: Setup is `pip install cartographer && cartographer init`
+4. **Simplicity**: Setup is `pip install llmap && llmap init`
 
 ---
 
