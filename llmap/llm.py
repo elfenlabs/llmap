@@ -44,6 +44,17 @@ Generate a markdown document following this template:
 - `function_signature` – What it does
 - [List main public APIs]
 
+## Critical Patterns
+
+[Include 1-3 short code snippets (under 5 lines each) that demonstrate critical patterns or gotchas.
+Focus on: memory ownership, threading assumptions, error handling patterns, or API contracts.
+Example:
+```cpp
+// All AST nodes MUST use this arena (never raw new)
+auto node = arena.alloc<BinaryExpr>(...);
+```
+Only include patterns that would prevent bugs or misuse. Skip if no critical patterns exist.]
+
 ## Invariants & Design Notes
 
 - [Important rules, assumptions, or design decisions]
@@ -58,6 +69,7 @@ Focus on:
 - The module's PURPOSE (what problem it solves)
 - Its DEPENDENCIES (what it needs, what needs it)
 - KEY COMPONENTS (most important functions/classes)
+- CRITICAL PATTERNS (code snippets showing usage gotchas)
 - INVARIANTS (important rules/assumptions)
 
 Be concise. Avoid restating obvious code. Focus on architectural understanding.
