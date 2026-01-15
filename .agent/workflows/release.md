@@ -44,15 +44,35 @@ description: How to release a new version of llmap
 
 ## Publishing to PyPI
 
-7. Build the package:
+7. Install build dependencies (if not already installed):
    ```bash
+   pip install build twine
+   ```
+
+// turbo
+8. Clean previous builds and build the package:
+   ```bash
+   rm -rf dist/ build/ *.egg-info
    python -m build
    ```
 
-8. Upload to PyPI:
+9. (Optional) Test upload to TestPyPI first:
    ```bash
-   twine upload dist/*
+   twine upload --repository testpypi dist/*
+   pip install --index-url https://test.pypi.org/simple/ llmap
    ```
+
+// turbo
+10. Upload to PyPI:
+    ```bash
+    twine upload dist/*
+    ```
+
+11. Verify the release:
+    ```bash
+    pip install --upgrade llmap
+    llmap --version
+    ```
 
 ## Version Numbering
 
@@ -69,6 +89,14 @@ git commit -m "chore: release v0.2.0"
 git tag v0.2.0
 git push origin main --tags
 gh release create v0.2.0 --title "v0.2.0" --generate-notes
+
+# Build and publish to PyPI
+rm -rf dist/ build/ *.egg-info
 python -m build
 twine upload dist/*
+
+# Verify
+pip install --upgrade llmap
+llmap --version
 ```
+
