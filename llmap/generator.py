@@ -144,32 +144,76 @@ class MapGenerator:
         # Collect all module files
         module_files = sorted(self.modules_path.glob("*.md"))
         
+        # Extract module info (name, purpose, consumes, produces)
+        modules_info = []
+        for module_file in module_files:
+            content = module_file.read_text()
+            lines = content.split("\n")
+            name = module_file.stem.replace("_", "/")
+            
+            purpose = ""
+            consumes = ""
+            produces = ""
+            
+            for line in lines:
+                if line.startswith("**Purpose**:"):
+                    purpose = line.replace("**Purpose**:", "").strip()
+                elif line.startswith("**Consumes**:"):
+                    consumes = line.replace("**Consumes**:", "").strip()
+                elif line.startswith("**Produces**:"):
+                    produces = line.replace("**Produces**:", "").strip()
+            
+            modules_info.append({
+                "name": name,
+                "file": module_file.name,
+                "purpose": purpose,
+                "consumes": consumes,
+                "produces": produces,
+            })
+        
+        # Group modules by category (first path component)
+        categories: dict[str, list[dict]] = {}
+        for info in modules_info:
+            parts = info["name"].split("/")
+            category = parts[0].title() if len(parts) > 1 else "Core"
+            if category not in categories:
+                categories[category] = []
+            categories[category].append(info)
+        
+        # Build output
         lines = [
             "# Code Map Overview",
             "",
             "This document provides a high-level overview of the codebase architecture.",
             "",
-            "## Modules",
+            "## Module Dependency Graph",
             "",
         ]
         
-        for module_file in module_files:
-            # Extract first line (title) and purpose from module file
-            content = module_file.read_text()
-            module_lines = content.split("\n")
-            
-            # Get module name from first heading
-            name = module_file.stem.replace("_", "/")
-            
-            # Find purpose line
-            purpose = ""
-            for line in module_lines:
-                if line.startswith("**Purpose**:"):
-                    purpose = line.replace("**Purpose**:", "").strip()
-                    break
-            
-            rel_path = f"modules/{module_file.name}"
-            lines.append(f"- [{name}]({rel_path}) – {purpose}")
+        # Generate dependency graph grouped by category
+        for category, mods in sorted(categories.items()):
+            lines.append(f"### {category}")
+            lines.append("")
+            for mod in mods:
+                parts = []
+                if mod["consumes"]:
+                    parts.append(f"consumes: {mod['consumes']}")
+                if mod["produces"]:
+                    parts.append(f"produces: {mod['produces']}")
+                
+                if parts:
+                    lines.append(f"- `{mod['name']}` → {' | '.join(parts)}")
+                else:
+                    lines.append(f"- `{mod['name']}`")
+            lines.append("")
+        
+        # Module list section
+        lines.append("## Modules")
+        lines.append("")
+        
+        for info in modules_info:
+            rel_path = f"modules/{info['file']}"
+            lines.append(f"- [{info['name']}]({rel_path}) – {info['purpose']}")
         
         # Append metadata footer
         content = "\n".join(lines)
