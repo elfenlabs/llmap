@@ -108,9 +108,16 @@ def update(full: bool, dry_run: bool):
         _, structures = generator.generate_module(module)
         module_structures[module.name] = structures
     
-    # Build dependency graph
+    # Build dependency graph using all known files (not just changed ones)
     click.echo("  → Resolving dependencies...")
-    resolver = DependencyResolver(modules)
+    root = Path.cwd()
+    all_files = {filepath: fs.module for filepath, fs in state.state.files.items()}
+    # Also add files from current update (in case they're new)
+    for module in modules:
+        for path, _ in module.files:
+            rel_path = str(path.relative_to(root))
+            all_files[rel_path] = module.name
+    resolver = DependencyResolver(modules, all_files)
     resolver.build_dependency_graph(module_structures)
     
     # Add Related Modules sections to all generated files
@@ -122,7 +129,6 @@ def update(full: bool, dry_run: bool):
     click.echo("  → overview.md")
     
     # Update state - build list of (filepath, hash, module_name) tuples
-    root = Path.cwd()
     file_updates = []
     for module in modules:
         for path, file_hash in module.files:

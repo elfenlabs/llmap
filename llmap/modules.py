@@ -89,17 +89,29 @@ class ModuleGrouper:
 class DependencyResolver:
     """Resolves dependencies between modules based on import analysis."""
     
-    def __init__(self, modules: list[Module]):
+    def __init__(self, modules: list[Module], all_files: dict[str, str] | None = None):
+        """Initialize dependency resolver.
+        
+        Args:
+            modules: List of modules being updated (for populating dependents)
+            all_files: Optional dict mapping relative file paths to module names.
+                       If provided, used for resolving imports (supports incremental updates).
+                       If not provided, builds from modules list.
+        """
         self.modules = modules
         self.root = Path.cwd()
         # Map from file path (relative) to module name
         self._file_to_module: dict[str, str] = {}
-        for module in modules:
-            for path, _ in module.files:
-                rel_path = str(path.relative_to(self.root))
-                self._file_to_module[rel_path] = module.name
-                # Also map by filename for simple includes
-                self._file_to_module[path.name] = module.name
+        
+        if all_files:
+            # Use complete file mapping for accurate dependency resolution
+            self._file_to_module = dict(all_files)
+        else:
+            # Fall back to building from provided modules
+            for module in modules:
+                for path, _ in module.files:
+                    rel_path = str(path.relative_to(self.root))
+                    self._file_to_module[rel_path] = module.name
     
     def resolve_import(self, importing_file: Path, import_name: str) -> str | None:
         """Resolve an import to a module name.
