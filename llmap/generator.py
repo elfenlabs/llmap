@@ -17,11 +17,15 @@ class MapGenerator:
         self.modules_path = codemap_path / "modules"
         self.llm = LLMClient(config)
     
-    def generate_module(self, module: Module) -> Path:
+    def _module_name_to_filename(self, module_name: str) -> str:
+        """Convert module name to markdown filename."""
+        return module_name.replace("/", "_").replace("\\", "_") + ".md"
+    
+    def generate_module(self, module: Module) -> tuple[Path, list[FileStructure]]:
         """Generate markdown documentation for a module.
         
         Returns:
-            Path to the generated markdown file.
+            Tuple of (path to generated markdown file, list of parsed structures)
         """
         # Parse all files in the module
         structures: list[FileStructure] = []
@@ -39,14 +43,56 @@ class MapGenerator:
         content = self.llm.summarize_module(module, structures)
         
         # Write to file
-        # Convert module name to filename (e.g., "src/parser" -> "src_parser.md")
-        filename = module.name.replace("/", "_").replace("\\", "_") + ".md"
+        filename = self._module_name_to_filename(module.name)
         output_path = self.modules_path / filename
         
         self.modules_path.mkdir(parents=True, exist_ok=True)
         output_path.write_text(content)
         
-        return output_path
+        return output_path, structures
+    
+    def add_related_modules_section(self, module: Module) -> None:
+        """Append a Related Modules section to an existing module file.
+        
+        This adds navigable links to modules that this module depends on
+        and modules that depend on this module.
+        """
+        filename = self._module_name_to_filename(module.name)
+        output_path = self.modules_path / filename
+        
+        if not output_path.exists():
+            return
+        
+        # Build the related modules section
+        lines = [
+            "",
+            "---",
+            "",
+            "## Related Modules",
+            "",
+        ]
+        
+        if module.dependencies:
+            lines.append("**Depends on**:")
+            for dep_name in sorted(module.dependencies):
+                dep_filename = self._module_name_to_filename(dep_name)
+                lines.append(f"- [{dep_name}](./{dep_filename})")
+            lines.append("")
+        
+        if module.dependents:
+            lines.append("**Depended by**:")
+            for dep_name in sorted(module.dependents):
+                dep_filename = self._module_name_to_filename(dep_name)
+                lines.append(f"- [{dep_name}](./{dep_filename})")
+            lines.append("")
+        
+        if not module.dependencies and not module.dependents:
+            lines.append("*No direct module dependencies detected.*")
+            lines.append("")
+        
+        # Append to existing content
+        existing_content = output_path.read_text()
+        output_path.write_text(existing_content + "\n".join(lines))
     
     def generate_overview(self) -> Path:
         """Generate overview.md that indexes all modules.

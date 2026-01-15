@@ -59,7 +59,7 @@ def update(full: bool, dry_run: bool):
     from .config import load_config, ConfigError
     from .state import StateManager
     from .detector import ChangeDetector
-    from .modules import ModuleGrouper
+    from .modules import ModuleGrouper, DependencyResolver
     from .generator import MapGenerator
     
     _setup_litellm()  # Suppress litellm noise before generator uses it
@@ -100,11 +100,22 @@ def update(full: bool, dry_run: bool):
             click.echo(f"  - {module.name} ({len(module.files)} files)")
         return
     
-    # Generate maps
+    # Generate maps and collect structures for dependency analysis
     click.echo(f"Updating {len(modules)} module(s)...")
+    module_structures: dict[str, list] = {}
     for module in modules:
         click.echo(f"  → {module.name}")
-        generator.generate_module(module)
+        _, structures = generator.generate_module(module)
+        module_structures[module.name] = structures
+    
+    # Build dependency graph
+    click.echo("  → Resolving dependencies...")
+    resolver = DependencyResolver(modules)
+    resolver.build_dependency_graph(module_structures)
+    
+    # Add Related Modules sections to all generated files
+    for module in modules:
+        generator.add_related_modules_section(module)
     
     # Generate overview index
     generator.generate_overview()
