@@ -109,10 +109,6 @@ For free, private, unlimited usage:
      api_base: http://localhost:11434
    ```
 
-**Recommended models for RTX 4090 (24GB VRAM):**
-- `qwen3-coder:30b` — Best for repo-scale reasoning
-- `glm-4.6` — Fastest for agentic tasks
-
 ## Output Structure
 
 ```text
