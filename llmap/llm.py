@@ -34,7 +34,7 @@ Generate a markdown document following this template:
 
 **Depends on**:
 - `module_name` – [Brief explanation of what is used from this module]
-- [List modules/libraries this depends on]
+
 
 **Depended by**:
 - `module_name` – [Brief explanation of how this module is used]

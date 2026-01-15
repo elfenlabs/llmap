@@ -59,49 +59,24 @@ class MapGenerator:
         # Collect all module files
         module_files = sorted(self.modules_path.glob("*.md"))
         
-        # Extract module info (name, purpose, consumes, produces, depends_on)
+        # Extract module info (name, purpose, consumes, produces)
         modules_info = []
         for module_file in module_files:
             content = module_file.read_text()
+            lines = content.split("\n")
             name = module_file.stem.replace("_", "/")
             
-            # Extract purpose
             purpose = ""
-            for line in content.split("\n"):
+            consumes = ""
+            produces = ""
+            
+            for line in lines:
                 if line.startswith("**Purpose**:"):
                     purpose = line.replace("**Purpose**:", "").strip()
-                    break
-            
-            # Extract consumes
-            consumes = ""
-            for line in content.split("\n"):
-                if line.startswith("**Consumes**:"):
+                elif line.startswith("**Consumes**:"):
                     consumes = line.replace("**Consumes**:", "").strip()
-                    break
-            
-            # Extract produces
-            produces = ""
-            for line in content.split("\n"):
-                if line.startswith("**Produces**:"):
+                elif line.startswith("**Produces**:"):
                     produces = line.replace("**Produces**:", "").strip()
-                    break
-            
-            # Extract depends_on list
-            depends_on = []
-            in_depends_section = False
-            for line in content.split("\n"):
-                if line.startswith("**Depends on**:"):
-                    in_depends_section = True
-                    continue
-                if in_depends_section:
-                    if line.startswith("**") or (line.strip() and not line.startswith("-")):
-                        break
-                    if line.strip().startswith("- `"):
-                        # Extract module name from "- `module_name` – description"
-                        dep = line.strip()[3:]  # Remove "- `"
-                        if "`" in dep:
-                            dep = dep.split("`")[0]
-                            depends_on.append(dep)
             
             modules_info.append({
                 "name": name,
@@ -109,7 +84,6 @@ class MapGenerator:
                 "purpose": purpose,
                 "consumes": consumes,
                 "produces": produces,
-                "depends_on": depends_on,
             })
         
         # Group modules by category (first path component)
