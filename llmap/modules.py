@@ -12,6 +12,8 @@ class Module:
     name: str
     path: Path
     files: list[tuple[Path, str]] = field(default_factory=list)  # (path, hash)
+    dependencies: set[str] = field(default_factory=set)  # Module names this depends on
+    dependents: set[str] = field(default_factory=set)  # Module names that depend on this
     
     def add_file(self, path: Path, file_hash: str):
         self.files.append((path, file_hash))
@@ -82,3 +84,87 @@ class ModuleGrouper:
             modules[module_name].add_file(path, file_hash)
         
         return list(modules.values())
+
+
+class DependencyResolver:
+    """Resolves dependencies between modules based on import analysis."""
+    
+    def __init__(self, modules: list[Module], all_files: dict[str, str] | None = None):
+        """Initialize dependency resolver.
+        
+        Args:
+            modules: List of modules being updated (for populating dependents)
+            all_files: Optional dict mapping relative file paths to module names.
+                       If provided, used for resolving imports (supports incremental updates).
+                       If not provided, builds from modules list.
+        """
+        self.modules = modules
+        self.root = Path.cwd()
+        # Map from file path (relative) to module name
+        self._file_to_module: dict[str, str] = {}
+        
+        if all_files:
+            # Use complete file mapping for accurate dependency resolution
+            self._file_to_module = dict(all_files)
+        else:
+            # Fall back to building from provided modules
+            for module in modules:
+                for path, _ in module.files:
+                    rel_path = str(path.relative_to(self.root))
+                    self._file_to_module[rel_path] = module.name
+    
+    def resolve_import(self, importing_file: Path, import_name: str) -> str | None:
+        """Resolve an import to a module name.
+        
+        Args:
+            importing_file: The file containing the import
+            import_name: The import path (e.g., "../lexer/token.h" or "semantic.h")
+            
+        Returns:
+            Module name if resolved, None otherwise
+        """
+        # Try direct filename match first
+        if import_name in self._file_to_module:
+            return self._file_to_module[import_name]
+        
+        # Try resolving relative path from importing file's directory
+        try:
+            import_path = (importing_file.parent / import_name).resolve()
+            rel_path = str(import_path.relative_to(self.root))
+            if rel_path in self._file_to_module:
+                return self._file_to_module[rel_path]
+        except (ValueError, OSError):
+            pass
+        
+        return None
+    
+    def build_dependency_graph(
+        self,
+        module_structures: dict[str, list["FileStructure"]]
+    ) -> None:
+        """Build bidirectional dependency graph for all modules.
+        
+        Args:
+            module_structures: Map from module name to list of parsed FileStructures
+        """
+        from .parser import FileStructure  # Import here to avoid circular import
+        
+        module_by_name = {m.name: m for m in self.modules}
+        
+        for module in self.modules:
+            structures = module_structures.get(module.name, [])
+            
+            for structure in structures:
+                for imp in structure.imports:
+                    # Skip system imports
+                    if imp.is_system:
+                        continue
+                    
+                    target_module = self.resolve_import(structure.path, imp.name)
+                    if target_module and target_module != module.name:
+                        # Add dependency: this module depends on target
+                        module.dependencies.add(target_module)
+                        # Add reverse: target is depended on by this module
+                        if target_module in module_by_name:
+                            module_by_name[target_module].dependents.add(module.name)
+
