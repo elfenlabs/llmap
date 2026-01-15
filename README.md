@@ -1,4 +1,4 @@
-# Cartographer
+# llmap
 
 **Generate navigable "code maps" to help LLMs understand project architecture.**
 
@@ -14,7 +14,7 @@ Traditional Code RAG uses vector embeddings to find specific code snippets—gre
 - Why was a component designed this way?
 - What are the architectural invariants?
 
-**Cartographer provides the Map**—high-level structural context that helps LLMs orient themselves, navigate dependencies, and reason about architecture.
+**llmap provides the Map**—high-level structural context that helps LLMs orient themselves, navigate dependencies, and reason about architecture.
 
 ## Key Features
 
@@ -27,10 +27,10 @@ Traditional Code RAG uses vector embeddings to find specific code snippets—gre
 ## Installation
 
 ```bash
-# Using uv (recommended)
-uv pip install -e .
+# From PyPI
+pip install llmap
 
-# Or standard pip
+# Or from source
 pip install -e .
 ```
 
@@ -38,27 +38,27 @@ pip install -e .
 
 ```bash
 # Initialize a new codemap
-cartographer init
+llmap init
 
 # Generate/update the code map
-cartographer update
+llmap update
 
 # Check if map is up-to-date (useful for CI)
-cartographer status
+llmap status
 
 # Force full rebuild
-cartographer update --full
+llmap update --full
 
 # Preview changes without updating
-cartographer update --dry-run
+llmap update --dry-run
 
 # Clean generated files (keeps config)
-cartographer clean
+llmap clean
 ```
 
 ## Configuration
 
-After `cartographer init`, edit `.codemap/config.yaml`:
+After `llmap init`, edit `.codemap/config.yaml`:
 
 ```yaml
 # LLM provider configuration

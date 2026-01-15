@@ -48,7 +48,7 @@ def init(force: bool):
     click.echo()
     click.echo("Next steps:")
     click.echo(f"  1. Edit {config_path} to configure your project")
-    click.echo("  2. Run 'cartographer update' to generate the code map")
+    click.echo("  2. Run 'llmap update' to generate the code map")
 
 
 @main.command()
@@ -67,7 +67,7 @@ def update(full: bool, dry_run: bool):
     codemap_path = Path(CODEMAP_DIR)
     
     if not codemap_path.exists():
-        click.echo("Error: No codemap found. Run 'cartographer init' first.")
+        click.echo("Error: No codemap found. Run 'llmap init' first.")
         raise SystemExit(1)
     
     try:
@@ -178,7 +178,7 @@ def status():
     codemap_path = Path(CODEMAP_DIR)
     
     if not codemap_path.exists():
-        click.echo("No codemap found. Run 'cartographer init' first.")
+        click.echo("No codemap found. Run 'llmap init' first.")
         raise SystemExit(1)
     
     try:
@@ -201,7 +201,7 @@ def status():
         if len(changed_files) > 10:
             click.echo(f"  ... and {len(changed_files) - 10} more")
         click.echo()
-        click.echo("Run 'cartographer update' to regenerate.")
+        click.echo("Run 'llmap update' to regenerate.")
         raise SystemExit(1)
 
 

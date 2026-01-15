@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "cartographer"
+name = "llmap"
 version = "0.1.0"
 description = "Generate navigable code maps to help LLMs understand project architecture"
 readme = "README.md"
@@ -39,7 +39,7 @@ dev = [
 ]
 
 [project.scripts]
-cartographer = "cartographer.cli:main"
+llmap = "llmap.cli:main"
 
 [tool.hatch.build.targets.wheel]
-packages = ["cartographer"]
+packages = ["llmap"]
