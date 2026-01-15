@@ -64,8 +64,16 @@ Provide 1-2 practical code examples showing how to use this module:
 // Example code showing error handling or advanced patterns
 ```
 
-Focus on: initialization, main workflow, and error handling patterns.
-Extract examples from test files or examples in the codebase when available.
+## Critical Patterns
+
+[Include 1-3 short code snippets (under 5 lines each) that demonstrate critical patterns or gotchas.
+Focus on: memory ownership, threading assumptions, error handling patterns, or API contracts.
+Example:
+```cpp
+// All AST nodes MUST use this arena (never raw new)
+auto node = arena.alloc<BinaryExpr>(...);
+```
+Only include patterns that would prevent bugs or misuse. Skip if no critical patterns exist.]
 
 ## Invariants & Design Notes
 
@@ -75,7 +83,7 @@ Extract examples from test files or examples in the codebase when available.
 
 - `filename.cpp` – Brief purpose
 - [List all files with one-line descriptions]
-````
+```
 
 Focus on:
 - The module's PURPOSE (what problem it solves)
@@ -83,6 +91,7 @@ Focus on:
 - What it CONSUMES and PRODUCES (data flow)
 - KEY COMPONENTS (most important functions/classes)
 - USAGE PATTERNS (practical examples for integration)
+- CRITICAL PATTERNS (code snippets showing usage gotchas)
 - INVARIANTS (important rules/assumptions)
 
 Be concise. Avoid restating obvious code. Focus on architectural understanding.
